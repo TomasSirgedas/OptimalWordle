@@ -73,6 +73,22 @@ double calcScore( const vector<int>& candidateWords )
 
    bool isTopLevel = candidateWords.size() == g_allWords.size();
 
+   // optimization -- quickly check for an optimal guess (i.e. a guess that puts each candidate into a separate bucket)
+   for ( int guess : candidateWords )
+   {
+      uint64_t bucketsUsed[4] = { 0 };
+      for ( int candidateWord : candidateWords ) if ( guess != candidateWord )
+      {
+         uint8_t bucket = g_BucketForGuessTable.bucket( guess, candidateWord );
+         if ( bucketsUsed[bucket/64] & (1LL<<(bucket&63)) )
+            goto skip;
+         bucketsUsed[bucket/64] |= (1LL<<(bucket&63));
+      }
+      return 2 - 1./candidateWords.size(); // all guesses land in separate buckets
+      skip:;
+   }
+
+
    for ( int guess : candidateWords )
    {
       uint64_t bucketsUsed[4] = { 0 };

@@ -21,8 +21,5 @@ std::vector<std::string> WordleDictionary::getWords( int numberOfWords )
       throw "in `WordleDictionary::getWords`: `numberOfWords` too large";
 
    std::vector<std::string> ret( g_clueWords.begin(), g_clueWords.begin() + numberOfWords );
-   moveToFront( ret, "crate" );
-   moveToFront( ret, "stale" );
-   moveToFront( ret, "slate" );
    return ret;
 }

@@ -149,10 +149,8 @@ double calcScore( const vector<int>& candidateWords )
             bestGuess = guess;
          }
 
-         if ( bestScore < 1.9999999 )
-            break; // optimal 
-         //if ( !guessIsACandidate && bestScore < 2.0000001 )
-         //   break; // optimal 
+         if ( bestScore < 2.0000001 )
+            break; // nothing can be better, since we checked for optimal already
       }
    }
 

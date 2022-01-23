@@ -169,7 +169,7 @@ double calcScore( const vector<int>& candidateWords )
             if ( lowerBoundScore >= bestScore )
                continue;
          }
-         else // use bit flags instead of vector<int>
+         else // optimization -- use bit flags (uint64_t) instead of vector<int>
          {
             unordered_map<int, uint64_t> wordsForBucket;
             for ( int candidateWordIndex = 0; candidateWordIndex < (int) candidateWords.size(); candidateWordIndex++ ) if ( guess != candidateWords[candidateWordIndex] )

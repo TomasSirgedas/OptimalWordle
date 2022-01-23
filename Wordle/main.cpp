@@ -79,6 +79,35 @@ int optimalGuess( const vector<int>& candidateWords )
    return -1;
 }
 
+vector<int> goodOrderForCandidateWords( vector<int> candidateWords )
+{
+   if ( candidateWords.size() < 20 )
+      return candidateWords;
+
+   int letterFrequency[26] = { 0 }; // but only count letter once in each word
+   for ( int word : candidateWords )
+   {
+      int used = 0;
+      for ( int i = 0; i < WORD_LEN; i++ )
+      {
+         int letter = g_allWords[word][i] - 'a';
+         if ( used & (1<<letter) ) 
+            continue;
+         used |= 1<<letter;
+         letterFrequency[letter]++;
+      }
+   }
+
+   auto scoreForWord = [&letterFrequency]( int word ) { 
+      int score = 0;
+      for ( int i = 0; i < WORD_LEN; i++ )
+         score += letterFrequency[g_allWords[word][i]-'a'];
+      return score;
+   };
+   sort( candidateWords.begin(), candidateWords.end(), [&]( int a, int b ) { return scoreForWord( a ) > scoreForWord( b ); } );
+   return candidateWords;
+}
+
 double calcScore( const vector<int>& candidateWords )
 {
    if ( candidateWords.size() == 1 )
@@ -98,8 +127,10 @@ double calcScore( const vector<int>& candidateWords )
    }
    else
    {
+      vector<int> candidateWordsInGoodGuessOrder = goodOrderForCandidateWords( candidateWords );
+
       // score each guess, and keep track which is best
-      for ( int guess : candidateWords )
+      for ( int guess : candidateWordsInGoodGuessOrder )
       {
          uint64_t bucketsUsed[4] = { 0 };
          for ( int candidateWord : candidateWords ) if ( guess != candidateWord )

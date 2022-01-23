@@ -146,28 +146,63 @@ double calcScore( const vector<int>& candidateWords )
          if ( lowerBoundScore >= bestScore )
             continue;
 
-         unordered_map<int, vector<int>> wordsForBucket;
-         for ( int candidateWord : candidateWords ) if ( guess != candidateWord )
-         {
-            int bucket = g_BucketForGuessTable.bucket( guess, candidateWord );
-            wordsForBucket[bucket].push_back( candidateWord );
-         }
-
-         if ( wordsForBucket.size() == 1 && wordsForBucket.begin()->second.size() == candidateWords.size() )
-            continue;     
-
          double score = 1;
-         for ( const auto& [bucket, remainingWords] : wordsForBucket )
+
+         if ( candidateWords.size() > 64 )
          {
-            double lowerBoundScoreForBucket = 2 - 1./remainingWords.size();
-            double scoreForBucket = calcScore( remainingWords );
-            score += scoreForBucket * remainingWords.size() / candidateWords.size();
-            lowerBoundScore += ( scoreForBucket - lowerBoundScoreForBucket ) * remainingWords.size() / candidateWords.size();
+            unordered_map<int, vector<int>> wordsForBucket;
+            for ( int candidateWord : candidateWords ) if ( guess != candidateWord )
+            {
+               int bucket = g_BucketForGuessTable.bucket( guess, candidateWord );
+               wordsForBucket[bucket].push_back( candidateWord );
+            } 
+
+            for ( const auto& [bucket, remainingWords] : wordsForBucket )
+            {
+               double lowerBoundScoreForBucket = 2 - 1./remainingWords.size();
+               double scoreForBucket = calcScore( remainingWords );
+               score += scoreForBucket * remainingWords.size() / candidateWords.size();
+               lowerBoundScore += ( scoreForBucket - lowerBoundScoreForBucket ) * remainingWords.size() / candidateWords.size();
+               if ( lowerBoundScore >= bestScore )
+                  break;
+            }
             if ( lowerBoundScore >= bestScore )
-               break;
+               continue;
          }
-         if ( lowerBoundScore >= bestScore )
-            continue;
+         else // use bit flags instead of vector<int>
+         {
+            unordered_map<int, uint64_t> wordsForBucket;
+            for ( int candidateWordIndex = 0; candidateWordIndex < (int) candidateWords.size(); candidateWordIndex++ ) if ( guess != candidateWords[candidateWordIndex] )
+            {
+               int bucket = g_BucketForGuessTable.bucket( guess, candidateWords[candidateWordIndex] );
+               wordsForBucket[bucket] |= 1LL << candidateWordIndex;
+            }
+
+            for ( const auto& [bucket, remainingWordsBits] : wordsForBucket )
+            {
+               int remainingWordsSize = popcount( remainingWordsBits );
+               double lowerBoundScoreForBucket = 2 - 1./remainingWordsSize;
+
+               vector<int> remainingWords;
+               {
+                  remainingWords.reserve( remainingWordsSize );
+                  uint64_t r = remainingWordsBits;
+                  while ( r )
+                  {
+                     int idx = countr_zero( r );
+                     r &= ~(1LL << idx); // clear the bit
+                     remainingWords.push_back( candidateWords[idx] );
+                  }
+               }
+               double scoreForBucket = calcScore( remainingWords );
+               score += scoreForBucket * remainingWordsSize / candidateWords.size();
+               lowerBoundScore += ( scoreForBucket - lowerBoundScoreForBucket ) * remainingWordsSize / candidateWords.size();
+               if ( lowerBoundScore >= bestScore )
+                  break;
+            }
+            if ( lowerBoundScore >= bestScore )
+               continue;
+         }
 
          //if ( isTopLevel )
          //{

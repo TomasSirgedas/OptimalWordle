@@ -81,7 +81,7 @@ int optimalGuess( const vector<int>& candidateWords )
 
 vector<int> goodOrderForCandidateWords( vector<int> candidateWords )
 {
-   if ( candidateWords.size() < 20 )
+   if ( candidateWords.size() < 50 )
       return candidateWords;
 
    int letterFrequency[26] = { 0 }; // but only count letter once in each word

@@ -60,21 +60,9 @@ public:
    vector<vector<uint8_t>> m;
 } g_BucketForGuessTable;
 
-
-
-double calcScore( const vector<int>& candidateWords )
+// returns -1 if no guess is "optimal" (i.e. putting candidateWords into a separate bucket)
+int optimalGuess( const vector<int>& candidateWords )
 {
-   if ( candidateWords.size() == 1 )
-      return 1;
-   if ( candidateWords.size() == 2 )
-      return 1.5;
-
-   double bestScore = 99999;
-   int bestGuess = -1;
-
-   bool isTopLevel = candidateWords.size() == g_allWords.size();
-
-   // optimization -- quickly check for an optimal guess (i.e. a guess that puts each candidate into a separate bucket)
    for ( int guess : candidateWords )
    {
       uint64_t bucketsUsed[4] = { 0 };
@@ -85,65 +73,87 @@ double calcScore( const vector<int>& candidateWords )
             goto skip;
          bucketsUsed[bucket/64] |= (1LL<<(bucket&63));
       }
-      return 2 - 1./candidateWords.size(); // all guesses land in separate buckets
-      skip:;
+      return guess;
+   skip:;
    }
+   return -1;
+}
 
-   // score each guess, and keep track which is best
-   for ( int guess : candidateWords )
+double calcScore( const vector<int>& candidateWords )
+{
+   if ( candidateWords.size() == 1 )
+      return 1;
+   if ( candidateWords.size() == 2 )
+      return 1.5;
+
+   double bestScore = 99999;
+
+   bool isTopLevel = candidateWords.size() == g_allWords.size();
+
+   // optimization -- quickly check for an optimal guess (i.e. a guess that puts each candidate into a separate bucket)
+   int bestGuess = optimalGuess( candidateWords );
+   if ( bestGuess >= 0 )
    {
-      uint64_t bucketsUsed[4] = { 0 };
-      for ( int candidateWord : candidateWords ) if ( guess != candidateWord )
+      bestScore = 2 - 1./candidateWords.size();
+   }
+   else
+   {
+      // score each guess, and keep track which is best
+      for ( int guess : candidateWords )
       {
-         uint8_t bucket = g_BucketForGuessTable.bucket( guess, candidateWord );
-         bucketsUsed[bucket/64] |= (1LL<<(bucket&63));
-      }
-      int numBucketsUsed = popcount( bucketsUsed[0] ) + popcount( bucketsUsed[1] ) + popcount( bucketsUsed[2] ) + popcount( bucketsUsed[3] );
+         uint64_t bucketsUsed[4] = { 0 };
+         for ( int candidateWord : candidateWords ) if ( guess != candidateWord )
+         {
+            uint8_t bucket = g_BucketForGuessTable.bucket( guess, candidateWord );
+            bucketsUsed[bucket/64] |= (1LL<<(bucket&63));
+         }
+         int numBucketsUsed = popcount( bucketsUsed[0] ) + popcount( bucketsUsed[1] ) + popcount( bucketsUsed[2] ) + popcount( bucketsUsed[3] );
 
-      //double lowerBoundScore = 3 - ( numBucketsUsed + ( guessIsACandidate ? 2 : 0 ) ) / (double) candidateWords.size();
-      double lowerBoundScore = 3 - ( numBucketsUsed + 2 ) / (double) candidateWords.size();
+         //double lowerBoundScore = 3 - ( numBucketsUsed + ( guessIsACandidate ? 2 : 0 ) ) / (double) candidateWords.size();
+         double lowerBoundScore = 3 - ( numBucketsUsed + 2 ) / (double) candidateWords.size();
 
-      if ( lowerBoundScore >= bestScore )
-         continue;
-
-      unordered_map<int, vector<int>> wordsForBucket;
-      for ( int candidateWord : candidateWords ) if ( guess != candidateWord )
-      {
-         int bucket = g_BucketForGuessTable.bucket( guess, candidateWord );
-         wordsForBucket[bucket].push_back( candidateWord );
-      }
-
-      if ( wordsForBucket.size() == 1 && wordsForBucket.begin()->second.size() == candidateWords.size() )
-         continue;     
-
-      double score = 1;
-      for ( const auto& [bucket, remainingWords] : wordsForBucket )
-      {
-         double lowerBoundScoreForBucket = 2 - 1./remainingWords.size();
-         double scoreForBucket = calcScore( remainingWords );
-         score += scoreForBucket * remainingWords.size() / candidateWords.size();
-         lowerBoundScore += ( scoreForBucket - lowerBoundScoreForBucket ) * remainingWords.size() / candidateWords.size();
          if ( lowerBoundScore >= bestScore )
-            break;
+            continue;
+
+         unordered_map<int, vector<int>> wordsForBucket;
+         for ( int candidateWord : candidateWords ) if ( guess != candidateWord )
+         {
+            int bucket = g_BucketForGuessTable.bucket( guess, candidateWord );
+            wordsForBucket[bucket].push_back( candidateWord );
+         }
+
+         if ( wordsForBucket.size() == 1 && wordsForBucket.begin()->second.size() == candidateWords.size() )
+            continue;     
+
+         double score = 1;
+         for ( const auto& [bucket, remainingWords] : wordsForBucket )
+         {
+            double lowerBoundScoreForBucket = 2 - 1./remainingWords.size();
+            double scoreForBucket = calcScore( remainingWords );
+            score += scoreForBucket * remainingWords.size() / candidateWords.size();
+            lowerBoundScore += ( scoreForBucket - lowerBoundScoreForBucket ) * remainingWords.size() / candidateWords.size();
+            if ( lowerBoundScore >= bestScore )
+               break;
+         }
+         if ( lowerBoundScore >= bestScore )
+            continue;
+
+         //if ( isTopLevel )
+         //{
+         //   cout << g_allWords[guess] << " " << score << "    " << lowerBoundScore << endl;
+         //}
+
+         if ( score < bestScore )
+         {
+            bestScore = score;
+            bestGuess = guess;
+         }
+
+         if ( bestScore < 1.9999999 )
+            break; // optimal 
+         //if ( !guessIsACandidate && bestScore < 2.0000001 )
+         //   break; // optimal 
       }
-      if ( lowerBoundScore >= bestScore )
-         continue;
-
-      //if ( isTopLevel )
-      //{
-      //   cout << g_allWords[guess] << " " << score << "    " << lowerBoundScore << endl;
-      //}
-
-      if ( score < bestScore )
-      {
-         bestScore = score;
-         bestGuess = guess;
-      }
-
-      if ( bestScore < 1.9999999 )
-         break; // optimal 
-      //if ( !guessIsACandidate && bestScore < 2.0000001 )
-      //   break; // optimal 
    }
 
 

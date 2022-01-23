@@ -88,7 +88,7 @@ double calcScore( const vector<int>& candidateWords )
       skip:;
    }
 
-
+   // score each guess, and keep track which is best
    for ( int guess : candidateWords )
    {
       uint64_t bucketsUsed[4] = { 0 };

@@ -11,11 +11,16 @@ using namespace std;
 
 
 constexpr int WORD_LEN = 5;
+constexpr int CORRECT_ANSWER_BUCKET = 121;
 string bucketToStr( int bucket )
 {
    string ret;
-   for ( int i = 0; i < WORD_LEN; i++ )
-      ret += ( bucket & (1 << (i+WORD_LEN)) ) ? '#' : ( bucket & (1 << i) ) ? '*' : '.';
+   for ( int i = 0; i < WORD_LEN; i++, bucket /= 3 )
+   {
+      int bucketType = bucket % 3;
+      ret += string("_#~")[bucketType];
+   }
+   reverse( ret.begin(), ret.end() );
    return ret;
 }
 
@@ -231,7 +236,7 @@ double calcScore( const vector<int>& candidateWords, int& bestGuess )
    return bestScore;
 }
 
-int main()
+void searchWithIncreasingDictionarySizes()
 {
    for ( int sz = 1000; ; sz += 20 )
    {
@@ -246,10 +251,71 @@ int main()
       Timer t;
       int bestGuess = words[0];
       double score = calcScore( words, bestGuess );
-      cout << sz << "\t" << score << "\t" << t.elapsedTime() << "  " << g_allWords[bestGuess] << endl;
-
-      //break;
+      cout << sz << "\t" << score << "\t" << t.elapsedTime() << "\t" << g_allWords[bestGuess] << endl;
    }
-   return 0;
 }
 
+void doSearchTree( const vector<int>& candidateWords, const string& prefix )
+{
+   int guess = candidateWords[0];
+   double score = calcScore( candidateWords, guess );
+
+   unordered_map<int, vector<int>> wordsForBucket;
+   for ( int candidateWord : candidateWords )
+   {
+      int bucket = g_BucketForGuessTable.bucket( guess, candidateWord );
+      wordsForBucket[bucket].push_back( candidateWord );
+   }
+
+   vector<pair<int, vector<int>>> sortedWordsForBucket;
+   {
+      for ( const auto& [bucket, remainingWords] : wordsForBucket )
+         sortedWordsForBucket.push_back( {bucket, remainingWords} );
+      sort( sortedWordsForBucket.begin(), sortedWordsForBucket.end(), []( const pair<int, vector<int>>& a, const pair<int, vector<int>>& b )
+      {
+         int scoreA = a.first == CORRECT_ANSWER_BUCKET ? 999999 : (int) a.second.size();
+         int scoreB = b.first == CORRECT_ANSWER_BUCKET ? 999999 : (int) b.second.size();
+         return scoreA > scoreB;
+      } );
+   }
+
+   for ( const auto& [bucket, remainingWords] : sortedWordsForBucket /*wordsForBucket*/ )
+   {
+      //vector<string> v;
+      //for ( int w : remainingWords )
+      //   v.push_back( g_allWords[w] );
+
+      //trace << g_allWords[guess] << " " << bucketToStr( bucket ) << " " << v << endl;
+
+      //trace << prefix << g_allWords[guess] << " " << bucketToStr( bucket ) << endl;
+
+      if ( bucket == CORRECT_ANSWER_BUCKET )
+         cout << prefix << g_allWords[guess] + " " + bucketToStr( bucket ) << endl;
+      else
+         doSearchTree( remainingWords, prefix + g_allWords[guess] + " " + bucketToStr( bucket ) + "  " );
+   }
+}
+
+void calcSearchTree( int dictionarySize )
+{
+   g_allWords = WordleDictionary::getWords( dictionarySize );
+   g_BucketForGuessTable = BucketForGuessTable();
+
+   vector<int> words;
+   for ( int i = 0; i < (int) g_allWords.size(); i++ )
+      words.push_back( i );
+
+   Timer t;
+   doSearchTree( words, "" );
+   cout << "time = " << t.elapsedTime() << endl;
+}
+
+int main()
+{
+   if ( calcBucketForGuess( "abcde", "abcde" ) != CORRECT_ANSWER_BUCKET )
+      throw "CORRECT_ANSWER_BUCKET constant incorrect";
+
+   //searchWithIncreasingDictionarySizes();
+   calcSearchTree( 1000 );
+   return 0;
+}

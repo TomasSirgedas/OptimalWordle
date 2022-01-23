@@ -101,8 +101,16 @@ double calcScore( const vector<int>& candidateWords )
 
       double score = 1;
       for ( const auto& [bucket, remainingWords] : wordsForBucket )
-         score += calcScore( remainingWords ) * remainingWords.size() / candidateWords.size();
-
+      {
+         double lowerBoundScoreForBucket = 2 - 1./remainingWords.size();
+         double scoreForBucket = calcScore( remainingWords );
+         score += scoreForBucket * remainingWords.size() / candidateWords.size();
+         lowerBoundScore += ( scoreForBucket - lowerBoundScoreForBucket ) * remainingWords.size() / candidateWords.size();
+         if ( lowerBoundScore >= bestScore )
+            break;
+      }
+      if ( lowerBoundScore >= bestScore )
+         continue;
 
       //if ( isTopLevel )
       //{

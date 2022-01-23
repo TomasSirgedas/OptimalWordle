@@ -290,7 +290,7 @@ void doSearchTree( const vector<int>& candidateWords, const string& prefix )
       //trace << prefix << g_allWords[guess] << " " << bucketToStr( bucket ) << endl;
 
       if ( bucket == CORRECT_ANSWER_BUCKET )
-         cout << prefix << g_allWords[guess] + " " + bucketToStr( bucket ) << endl;
+         cout << prefix << g_allWords[guess] + " " + bucketToStr( bucket )/* << "  [" << score << "]"*/ << endl;
       else
          doSearchTree( remainingWords, prefix + g_allWords[guess] + " " + bucketToStr( bucket ) + "  " );
    }

@@ -97,7 +97,7 @@ double calcScore( const vector<int>& candidateWords )
          uint8_t bucket = g_BucketForGuessTable.bucket( guess, candidateWord );
          bucketsUsed[bucket/64] |= (1LL<<(bucket&63));
       }
-      int numBucketsUsed = int( __popcnt64( bucketsUsed[0] ) + __popcnt64( bucketsUsed[1] ) + __popcnt64( bucketsUsed[2] ) + __popcnt64( bucketsUsed[3] ) );
+      int numBucketsUsed = popcount( bucketsUsed[0] ) + popcount( bucketsUsed[1] ) + popcount( bucketsUsed[2] ) + popcount( bucketsUsed[3] );
 
       //double lowerBoundScore = 3 - ( numBucketsUsed + ( guessIsACandidate ? 2 : 0 ) ) / (double) candidateWords.size();
       double lowerBoundScore = 3 - ( numBucketsUsed + 2 ) / (double) candidateWords.size();

@@ -108,7 +108,7 @@ vector<int> goodOrderForCandidateWords( vector<int> candidateWords )
    return candidateWords;
 }
 
-double calcScore( const vector<int>& candidateWords )
+double calcScore( const vector<int>& candidateWords, int& bestGuess )
 {
    if ( candidateWords.size() == 1 )
       return 1;
@@ -120,7 +120,7 @@ double calcScore( const vector<int>& candidateWords )
    bool isTopLevel = candidateWords.size() == g_allWords.size();
 
    // optimization -- quickly check for an optimal guess (i.e. a guess that puts each candidate into a separate bucket)
-   int bestGuess = optimalGuess( candidateWords );
+   bestGuess = optimalGuess( candidateWords );
    if ( bestGuess >= 0 )
    {
       bestScore = 2 - 1./candidateWords.size();
@@ -160,7 +160,8 @@ double calcScore( const vector<int>& candidateWords )
             for ( const auto& [bucket, remainingWords] : wordsForBucket )
             {
                double lowerBoundScoreForBucket = 2 - 1./remainingWords.size();
-               double scoreForBucket = calcScore( remainingWords );
+               int localBestGuess = remainingWords[0];
+               double scoreForBucket = calcScore( remainingWords, localBestGuess );
                score += scoreForBucket * remainingWords.size() / candidateWords.size();
                lowerBoundScore += ( scoreForBucket - lowerBoundScoreForBucket ) * remainingWords.size() / candidateWords.size();
                if ( lowerBoundScore >= bestScore )
@@ -194,7 +195,8 @@ double calcScore( const vector<int>& candidateWords )
                      remainingWords.push_back( candidateWords[idx] );
                   }
                }
-               double scoreForBucket = calcScore( remainingWords );
+               int localBestGuess = remainingWords[0];
+               double scoreForBucket = calcScore( remainingWords, localBestGuess );
                score += scoreForBucket * remainingWordsSize / candidateWords.size();
                lowerBoundScore += ( scoreForBucket - lowerBoundScoreForBucket ) * remainingWordsSize / candidateWords.size();
                if ( lowerBoundScore >= bestScore )
@@ -231,7 +233,7 @@ double calcScore( const vector<int>& candidateWords )
 
 int main()
 {
-   for ( int sz = 700; ; sz += 20 )
+   for ( int sz = 1000; ; sz += 20 )
    {
       g_allWords = WordleDictionary::getWords( sz );
 
@@ -242,10 +244,11 @@ int main()
       g_BucketForGuessTable = BucketForGuessTable();
 
       Timer t;
-      double score = calcScore( words );
-      cout << sz << "\t" << score << "\t" << t.elapsedTime() << endl;
+      int bestGuess = words[0];
+      double score = calcScore( words, bestGuess );
+      cout << sz << "\t" << score << "\t" << t.elapsedTime() << "  " << g_allWords[bestGuess] << endl;
 
-      break;
+      //break;
    }
    return 0;
 }

@@ -6,10 +6,23 @@ namespace
 }
 
 
+void moveToFront( std::vector<std::string>& v, const std::string& word )
+{
+   auto it = std::find( v.begin(), v.end(), word );
+   if ( it == v.end() )
+      return;
+   v.erase( it );
+   v.insert( v.begin(), word );
+}
+
 std::vector<std::string> WordleDictionary::getWords( int numberOfWords )
 {
    if ( numberOfWords > g_clueWords.size() )
       throw "in `WordleDictionary::getWords`: `numberOfWords` too large";
 
-   return { g_clueWords.begin(), g_clueWords.begin() + numberOfWords };
+   std::vector<std::string> ret( g_clueWords.begin(), g_clueWords.begin() + numberOfWords );
+   moveToFront( ret, "crate" );
+   moveToFront( ret, "stale" );
+   moveToFront( ret, "slate" );
+   return ret;
 }

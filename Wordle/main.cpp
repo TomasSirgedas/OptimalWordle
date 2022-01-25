@@ -246,7 +246,7 @@ double calcScore( const vector<int>& candidateWords, int& bestGuess, int numGues
 
 void searchWithIncreasingDictionarySizes()
 {
-   for ( int sz = 100; ; sz += 100 )
+   for ( int sz = 670; ; sz += 1 )
    {
       g_allWords = WordleDictionary::getWords( sz );
 
@@ -263,10 +263,12 @@ void searchWithIncreasingDictionarySizes()
    }
 }
 
-double doSearchTree( const vector<int>& candidateWords, const string& prefix )
+double doSearchTree( const vector<int>& candidateWords, const string& prefix, int guessesLeft )
 {
-   int guess = candidateWords[0];
-   double score = calcScore( candidateWords, guess, MAX_NUM_GUESSES );
+   int guess = candidateWords[0]; 
+   double score = calcScore( candidateWords, guess, guessesLeft );  
+   if ( guess == -1 )
+      throw "invalid guess";
 
    unordered_map<int, vector<int>> wordsForBucket;
    for ( int candidateWord : candidateWords )
@@ -300,7 +302,7 @@ double doSearchTree( const vector<int>& candidateWords, const string& prefix )
       if ( bucket == CORRECT_ANSWER_BUCKET )
          cout << prefix << g_allWords[guess] + " " + bucketToStr( bucket )/* << "  [" << score << "]"*/ << endl;
       else
-         doSearchTree( remainingWords, prefix + g_allWords[guess] + " " + bucketToStr( bucket ) + "  " );
+         doSearchTree( remainingWords, prefix + g_allWords[guess] + " " + bucketToStr( bucket ) + "  ", guessesLeft-1 );
    }
 
    return score;
@@ -316,7 +318,7 @@ void calcSearchTree( int dictionarySize )
       words.push_back( i );
 
    Timer t;
-   double score = doSearchTree( words, "" );
+   double score = doSearchTree( words, "", MAX_NUM_GUESSES );
    cout << "score = " << score << endl;
    cout << "time = " << t.elapsedTime() << endl;
 }

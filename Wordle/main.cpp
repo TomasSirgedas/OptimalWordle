@@ -328,5 +328,7 @@ int main()
 
    //searchWithIncreasingDictionarySizes();
    calcSearchTree( 2315 );
+      
+   { cout << "(press <enter> to exit)" << endl; cin.get(); }
    return 0;
 }

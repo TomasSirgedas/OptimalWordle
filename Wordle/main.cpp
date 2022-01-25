@@ -9,9 +9,10 @@
 
 using namespace std;
 
-
+constexpr int MAX_NUM_GUESSES = 6;
 constexpr int WORD_LEN = 5;
 constexpr int CORRECT_ANSWER_BUCKET = 121;
+constexpr double INF = 1e20;
 string bucketToStr( int bucket )
 {
    string ret;
@@ -113,10 +114,14 @@ vector<int> goodOrderForCandidateWords( vector<int> candidateWords )
    return candidateWords;
 }
 
-double calcScore( const vector<int>& candidateWords, int& bestGuess )
+double calcScore( const vector<int>& candidateWords, int& bestGuess, int numGuessesLeft )
 {
+   if ( numGuessesLeft <= 0 )
+      return INF;
    if ( candidateWords.size() == 1 )
       return 1;
+   if ( numGuessesLeft <= 1 )
+      return INF;
    if ( candidateWords.size() == 2 )
       return 1.5;
 
@@ -132,6 +137,9 @@ double calcScore( const vector<int>& candidateWords, int& bestGuess )
    }
    else
    {
+      if ( numGuessesLeft <= 2 ) // if optimal guess doesn't exist, we need at least 3 guesses
+         return INF; 
+
       vector<int> candidateWordsInGoodGuessOrder = goodOrderForCandidateWords( candidateWords );
 
       // score each guess, and keep track which is best
@@ -166,7 +174,7 @@ double calcScore( const vector<int>& candidateWords, int& bestGuess )
             {
                double lowerBoundScoreForBucket = 2 - 1./remainingWords.size();
                int localBestGuess = remainingWords[0];
-               double scoreForBucket = calcScore( remainingWords, localBestGuess );
+               double scoreForBucket = calcScore( remainingWords, localBestGuess, numGuessesLeft-1 );
                score += scoreForBucket * remainingWords.size() / candidateWords.size();
                lowerBoundScore += ( scoreForBucket - lowerBoundScoreForBucket ) * remainingWords.size() / candidateWords.size();
                if ( lowerBoundScore >= bestScore )
@@ -201,7 +209,7 @@ double calcScore( const vector<int>& candidateWords, int& bestGuess )
                   }
                }
                int localBestGuess = remainingWords[0];
-               double scoreForBucket = calcScore( remainingWords, localBestGuess );
+               double scoreForBucket = calcScore( remainingWords, localBestGuess, numGuessesLeft-1 );
                score += scoreForBucket * remainingWordsSize / candidateWords.size();
                lowerBoundScore += ( scoreForBucket - lowerBoundScoreForBucket ) * remainingWordsSize / candidateWords.size();
                if ( lowerBoundScore >= bestScore )
@@ -250,7 +258,7 @@ void searchWithIncreasingDictionarySizes()
 
       Timer t;
       int bestGuess = words[0];
-      double score = calcScore( words, bestGuess );
+      double score = calcScore( words, bestGuess, MAX_NUM_GUESSES );
       cout << sz << "\t" << score << "\t" << t.elapsedTime() << "\t" << g_allWords[bestGuess] << endl;
    }
 }
@@ -258,7 +266,7 @@ void searchWithIncreasingDictionarySizes()
 double doSearchTree( const vector<int>& candidateWords, const string& prefix )
 {
    int guess = candidateWords[0];
-   double score = calcScore( candidateWords, guess );
+   double score = calcScore( candidateWords, guess, MAX_NUM_GUESSES );
 
    unordered_map<int, vector<int>> wordsForBucket;
    for ( int candidateWord : candidateWords )
@@ -319,6 +327,6 @@ int main()
       throw "CORRECT_ANSWER_BUCKET constant incorrect";
 
    //searchWithIncreasingDictionarySizes();
-   calcSearchTree( 1000 );
+   calcSearchTree( 2315 );
    return 0;
 }

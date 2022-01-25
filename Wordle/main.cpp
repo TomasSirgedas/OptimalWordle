@@ -125,7 +125,7 @@ double calcScore( const vector<int>& candidateWords, int& bestGuess, int numGues
    if ( candidateWords.size() == 2 )
       return 1.5;
 
-   double bestScore = 99999;
+   double bestScore = INF;
 
    bool isTopLevel = candidateWords.size() == g_allWords.size();
 

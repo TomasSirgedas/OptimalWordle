@@ -142,6 +142,9 @@ double calcScore( const vector<int>& candidateWords, int& bestGuess, int numGues
 
       vector<int> candidateWordsInGoodGuessOrder = goodOrderForCandidateWords( candidateWords );
 
+      //if ( numGuessesLeft == MAX_NUM_GUESSES )
+      //   candidateWordsInGoodGuessOrder = { int( std::find( g_allWords.begin(), g_allWords.end(), "fjord" ) - g_allWords.begin() ) };
+
       // score each guess, and keep track which is best
       for ( int guess : candidateWordsInGoodGuessOrder )
       {
